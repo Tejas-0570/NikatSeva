@@ -18,12 +18,29 @@ export default function SignInScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSignIn = () => {
-    if (email && password) {
-      Alert.alert('Success', 'Signed in successfully!');
-      navigation.replace('MainTabs'); // ✅ THIS
-    } else {
-      Alert.alert('Error', 'Please fill in all fields.');
+  const handleSignIn = async () => {
+    try {
+      const response = await fetch("http://172.20.10.2:4000/api/users/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        Alert.alert("Success", "Login successful");
+        navigation.navigate("MainTabs");
+      } else {
+        Alert.alert("Error", data.message);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Could not connect to server");
     }
   };
 

@@ -9,15 +9,41 @@ export default function SignUpScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleSignUp = () => {
-    // Add your registration logic here (e.g., API call)
-    if (name && email && password && password === confirmPassword) {
-      // Simulate successful registration
-      Alert.alert('Success', 'Account created successfully!');
-      navigation.navigate('SignIn');
-    } else {
-      Alert.alert('Error', 'Please fill in all fields and ensure passwords match.');
+  const handleSignUp = async () => {
+    if (!name || !email || !password || !confirmPassword) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
     }
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    try{
+      const response = await fetch('http://172.20.10.2:4000/api/users/register', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: name,
+          email: email,
+          password: password
+        })
+      });
+      const data = await response.json();
+      if(response.ok){
+        Alert.alert('Success', 'Account created successfully');
+        navigation.navigate('SignIn');
+      } else {
+        Alert.alert('Error', data.message || 'Failed to create account');
+      }
+    }
+    catch(error){
+      console.error('Error:', error);
+      Alert.alert('Error', 'An error occurred. Please try again later.');
+    }
+    
   };
 
   return (

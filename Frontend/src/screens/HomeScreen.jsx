@@ -1,8 +1,9 @@
 // screens/HomeScreen.js - Placeholder for post-login screen
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, ScrollView, Pressable, Image, Alert, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, ScrollView, Pressable, Image, Alert, KeyboardAvoidingView, Platform, Keyboard, PermissionsAndroid } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Geolocation from 'react-native-geolocation-service';
 
 const profile = require('../assets/profile.jpg');
 export default function HomeScreen({ navigation }) {
@@ -10,6 +11,75 @@ export default function HomeScreen({ navigation }) {
     Keyboard.dismiss();
     // Alert.alert('Search triggered');
     navigation.navigate('SearchResults');
+  };
+
+  const [location, setLocation] = useState("Fetching location...");
+
+  useEffect(() => {
+    requestLocationPermission();
+  }, []);
+
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          getCurrentLocation();
+        } else {
+          setLocation("Permission Denied");
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+    } else {
+      getCurrentLocation();
+    }
+  };
+
+  const getCurrentLocation = () => {
+    console.log("Getting location...");
+
+    Geolocation.getCurrentPosition(
+      position => {
+        console.log("Position:", position);
+        const { latitude, longitude } = position.coords;
+        getAddressFromCoords(latitude, longitude);
+      },
+      error => {
+        console.log("Location Error:", error);
+        setLocation("Location Error");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0,
+        forceRequestLocation: true,
+        showLocationDialog: true,
+      }
+    );
+  };
+
+  const getAddressFromCoords = async (lat, lng) => {
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=YOUR_API_KEY`
+      );
+
+      const data = await response.json();
+      console.log("FULL GEOCODE RESPONSE:", data);
+
+      if (data.results && data.results.length > 0) {
+        setLocation(data.results[0].formatted_address);
+      } else {
+        setLocation("Address not found");
+      }
+    } catch (error) {
+      console.log("Geocode error:", error);
+      setLocation("Error fetching address");
+    }
   };
 
 
@@ -39,7 +109,7 @@ export default function HomeScreen({ navigation }) {
 
           <View >
             <MaterialIcons name="location-on" size={25} color="#999999" style={{ position: 'absolute', top: 20, zIndex: 1 }} />
-            <Text style={{ color: '#999999', position: 'absolute', top: 22, left: 30, zIndex: 1 }}>Near You – Home Location</Text>
+            <Text style={{ color: '#999999', position: 'absolute', top: 22, left: 30, zIndex: 1 }}>{location}</Text>
           </View>
 
           <View style={{ justifyContent: 'space-between', alignItems: 'center', top: 35 }}>
@@ -118,7 +188,7 @@ export default function HomeScreen({ navigation }) {
 
               {/* Top Row */}
               <View style={styles.proTopRow}>
-                <Image source={{uri: 'https://i.pravatar.cc/150?img=12'}} style={styles.proAvatar} />
+                <Image source={{ uri: 'https://i.pravatar.cc/150?img=12' }} style={styles.proAvatar} />
 
                 <View style={{ flex: 1 }}>
                   <Text style={styles.proName}>John Doe</Text>
@@ -235,101 +305,101 @@ const styles = StyleSheet.create({
   },
 
   proCardScroll: {
-  paddingHorizontal: 10,
-  paddingBottom: 10,
-},
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+  },
 
-proCard: {
-  width: 280,
-  height: 180,
-  backgroundColor: '#FFFFFF',
-  borderRadius: 18,
-  padding: 16,
-  marginRight: 14,
-  elevation: 3,
-  borderWidth: 1,
-  borderColor: '#E5E7EB',
-},
+  proCard: {
+    width: 280,
+    height: 180,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    marginRight: 14,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
 
-proTopRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 12,
-},
+  proTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
 
-proAvatar: {
-  width: 64,
-  height: 64,
-  borderRadius: 16,
-  borderWidth: 2,
-  borderColor: '#192D3C',
-},
+  proAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#192D3C',
+  },
 
-proName: {
-  fontSize: 16,
-  fontWeight: '700',
-  color: '#111827',
-},
+  proName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
 
-proSkill: {
-  fontSize: 13,
-  color: '#6B7280',
-  marginTop: 2,
-},
+  proSkill: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
+  },
 
-proMetaRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginTop: 6,
-  gap: 4,
-},
+  proMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 4,
+  },
 
-proRating: {
-  fontSize: 14,
-  fontWeight: '600',
-  color: '#111827',
-},
+  proRating: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
 
-proJobs: {
-  fontSize: 12,
-  color: '#6B7280',
-},
+  proJobs: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
 
-divider: {
-  height: 1,
-  backgroundColor: '#E5E7EB',
-  marginVertical: 12,
-},
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 12,
+  },
 
-proBottomRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-},
+  proBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
 
-proPriceLabel: {
-  fontSize: 12,
-  color: '#6B7280',
-},
+  proPriceLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
 
-proPrice: {
-  fontSize: 16,
-  fontWeight: '700',
-  color: '#192D3C',
-},
+  proPrice: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#192D3C',
+  },
 
-viewProfileButtonNew: {
-  backgroundColor: '#192D3C',
-  paddingVertical: 8,
-  paddingHorizontal: 18,
-  borderRadius: 12,
-},
+  viewProfileButtonNew: {
+    backgroundColor: '#192D3C',
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+  },
 
-viewProfileText: {
-  color: '#FFFFFF',
-  fontWeight: '700',
-  fontSize: 14,
-},
+  viewProfileText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
+  },
 
 
 });
